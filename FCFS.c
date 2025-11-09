@@ -50,6 +50,7 @@ p[0].TAT = p[0].WT + p[0].BT;
 total_wt += p[0].WT;
 total_tat += p[0].TAT;
 
+//for prcesses other than P
 for (int i =1; i<n ; i++){
     if(p[i].AT > p[i-1].CT){
         p[i].ST = p[i].AT;
