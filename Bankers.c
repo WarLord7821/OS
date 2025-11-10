@@ -266,8 +266,8 @@ void calculateNeedMatrix() {
 }
 
 /**
- * @brief Implements the Safety Algorithm.
- * Checks if the system is in a safe state.
+ * @brief Implements the Safety Algorithm with VERBOSE LOGGING.
+ * Checks if the system is in a safe state and prints a step-by-step log.
  * @param safeSequence An array to be filled with the safe sequence if one is found.
  * @return true if the system is safe, false otherwise.
  */
@@ -275,28 +275,35 @@ bool isSafe(int safeSequence[]) {
     // --- Step 1: Initialize ---
 
     // 'Work' vector, a temporary copy of 'Available'.
-    // Use VLA since numResources is known.
     int Work[numResources];
     for (int j = 0; j < numResources; j++) {
         Work[j] = Available[j];
     }
 
     // 'Finish' vector, a boolean array.
-    // Use VLA since numProcesses is known.
     bool Finish[numProcesses];
     for (int i = 0; i < numProcesses; i++) {
         Finish[i] = false; // No process has finished yet.
     }
 
     int safeSeqIndex = 0; // Index for building the safeSequence array.
+    int completedCount = 0;
+
+    // --- NEW: Header for the log ---
+    printf("\n--- Safety Check Log ---\n");
+    printf("Initial Available (Work): [ ");
+    for (int j = 0; j < numResources; j++) {
+        printf("%d ", Work[j]);
+    }
+    printf("]\n");
 
     // --- Step 2: Find a process that can finish ---
-    int completedCount = 0;
     while (completedCount < numProcesses) {
-        bool foundProcess = false; 
+        bool foundProcess = false;
 
-        // Iterate through all processes
+        // Iterate through all processes (P0 to Pn)
         for (int p = 0; p < numProcesses; p++) {
+            
             // Check if process P[p] has *not* finished yet
             if (Finish[p] == false) {
                 
@@ -311,10 +318,35 @@ bool isSafe(int safeSequence[]) {
 
                 // --- Step 3: "Run" the process ---
                 if (canRun) {
+                    // *** START OF NEW PRINTING LOGIC ***
+                    printf("\n-> Process P%d can run:\n", p);
+                    
+                    // Print current Need of this process
+                    printf("   Need:      [ ");
+                    for (int j = 0; j < numResources; j++) printf("%d ", Need[p][j]);
+                    printf("]\n");
+
+                    // Print current Available (Work)
+                    printf("   Available: [ ");
+                    for (int j = 0; j < numResources; j++) printf("%d ", Work[j]);
+                    printf("]\n   (Need <= Available is TRUE)\n");
+                    
+                    // Print what it's "releasing"
+                    printf("   Releasing: [ ");
+                    for (int j = 0; j < numResources; j++) printf("%d ", Allocation[p][j]);
+                    printf("]\n");
+
                     // Add its resources back to the 'Work' pool
                     for (int j = 0; j < numResources; j++) {
                         Work[j] += Allocation[p][j];
                     }
+
+                    // Print the NEW Available (Work)
+                    printf("   New Available (Work): [ ");
+                    for (int j = 0; j < numResources; j++) printf("%d ", Work[j]);
+                    printf("]\n");
+                    printf("   ----------------------------\n");
+                    // *** END OF NEW PRINTING LOGIC ***
 
                     // Mark as finished
                     Finish[p] = true;
@@ -331,12 +363,30 @@ bool isSafe(int safeSequence[]) {
         // If no process could be found to run in a full pass,
         // the system is in an UNSAFE state.
         if (foundProcess == false) {
+            
+            // --- NEW: Print failure details ---
+            printf("\n--- Safety Check FAILED ---\n");
+            printf("No remaining process can be satisfied with Available (Work): [ ");
+            for(int j=0; j<numResources; j++) printf("%d ", Work[j]);
+            printf("]\n");
+            
+            printf("Remaining processes and their needs (the 'remaining need'):\n");
+            for(int i=0; i<numProcesses; i++){
+                if(Finish[i] == false){
+                    printf("   P%d Need: [ ", i);
+                    for(int j=0; j<numResources; j++) printf("%d ", Need[i][j]);
+                    printf("]\n");
+                }
+            }
+            // --- End new print ---
+
             return false; // No safe sequence exists
         }
     }
 
-    // --- Step 4: Final Check ---
-    // If we exit the loop, all processes are finished. System is SAFE.
+    // --- NEW: Print success message ---
+    printf("\n--- Safety Check SUCCESSFUL --- \n");
+    // All processes are finished. System is SAFE.
     return true;
 }
 
